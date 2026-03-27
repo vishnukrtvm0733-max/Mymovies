@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Private Cinema</title>
+    <style>
+        :root { --red: #e50914; --black: #000; --gray: #1a1a1a; }
+        body { background: var(--black); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; overflow-x: hidden; }
+        
+        /* Login Overlay */
+        #login-screen { position: fixed; inset: 0; background: var(--black); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .login-box { background: var(--gray); padding: 30px; border-radius: 10px; text-align: center; width: 80%; max-width: 300px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #333; background: #222; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: var(--red); color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+
+        /* Main App UI */
+        .app-hidden { display: none !important; }
+        .player-container { width: 100%; aspect-ratio: 16/9; background: #000; position: sticky; top: 0; z-index: 90; border-bottom: 2px solid var(--red); }
+        video { width: 100%; height: 100%; outline: none; }
+        .list-area { padding: 15px; }
+        .movie-card { background: var(--gray); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
+        .movie-card:active { background: #222; transform: scale(0.98); }
+        .title { font-weight: bold; font-size: 0.9rem; max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .size { color: #888; font-size: 0.7rem; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <div class="login-box">
+        <h2 style="color:var(--red)">ENTER PASS</h2>
+        <input type="password" id="passInput" placeholder="Password">
+        <button onclick="checkPass()">Unlock Cinema</button>
+    </div>
+</div>
+
+<div id="main-app" class="app-hidden">
+    <div class="player-container">
+        <video id="mainPlayer" controls playsinline preload="auto">
+            <source id="videoSource" src="">
+        </video>
+    </div>
+    <div class="list-area" id="movieList">Loading movies...</div>
+</div>
+
+<script>
+    const MY_PASS = "1234"; // <-- CHANGE YOUR PASSWORD HERE
+    const API = window.location.origin;
+
+    function checkPass() {
+        const input = document.getElementById('passInput').value;
+        if(input === MY_PASS) {
+            document.getElementById('login-screen').classList.add('app-hidden');
+            document.getElementById('main-app').classList.remove('app-hidden');
+            loadMovies();
+        } else {
+            alert("Wrong Password!");
+        }
+    }
+
+    async function loadMovies() {
+        const res = await fetch(`${API}/api/movies`);
+        const data = await res.json();
+        const container = document.getElementById('movieList');
+        container.innerHTML = data.movies.map(m => `
+            <div class="movie-card" onclick="playMovie(${m.id})">
+                <div class="title">${m.title}</div>
+                <div class="size">${m.size} MB</div>
+            </div>
+        `).join('');
+    }
+
+    function playMovie(id) {
+        const player = document.getElementById('mainPlayer');
+        const source = document.getElementById('videoSource');
+        source.src = `${API}/stream/${id}`;
+        player.load();
+        player.play();
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+</script>
+</body>
+</html>
